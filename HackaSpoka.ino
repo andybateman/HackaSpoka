@@ -15,7 +15,7 @@
 #include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "esp12e-spoka";        // Name of device as displayed in Arduino
+const char* OTAName = "esp12e-spoka-dev";        // Name of device as displayed in Arduino
 const char* OTAPassword = "cf506a3aa";           // Password for Arduino to proceed with upload
 
 #define buttonPin 13            // Define pin for mode switch (pulled up)
@@ -29,7 +29,7 @@ int lastButtonState = LOW;       // the previous reading from the input pin
 long lastDebounceTime = 0;       // the last time the output pin was toggled
 long debounceDelay = 50;         // the debounce time; increase if the output flickers
 
-byte colourPos = 160;             // Default Colour
+byte colourPos = 140;             // Default Colour
 
 void setup() {
   Serial.begin(115200);
