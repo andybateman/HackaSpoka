@@ -14,3 +14,8 @@ Simply has the little guy glowing blue but will cycle through an RGB colour whee
 * Replaced the microprcessor with an ESP8266 (esp-12e package)
 * Added WIFI, everything has to have WIFI
 * Replaced the power jack with a micro USB connector
+
+## Requires
+
+* WiFiManager
+* Adafruit_NeoPixel

@@ -4,7 +4,7 @@
  Copyright (c) 2016 Andy Bateman.  All right reserved.
  Created by Andy Bateman, June 2016.
  
- Serious bit of hacking of an Ikea SPÖKA to create a Glo Clock clone for my little 
+ Serious bit of hacking of an Ikea SPÖKA to create a Glo Clock clone for my little boy.
  (http://www.ikea.com/us/en/catalog/products/30150984/)
 
 */
@@ -29,7 +29,7 @@ int lastButtonState = LOW;       // the previous reading from the input pin
 long lastDebounceTime = 0;       // the last time the output pin was toggled
 long debounceDelay = 50;         // the debounce time; increase if the output flickers
 
-byte colourPos = 140;             // Default Colour
+byte colourPos = 150;            // Default Colour (NB: 30 is Yellow)
 
 void setup() {
   Serial.begin(115200);
