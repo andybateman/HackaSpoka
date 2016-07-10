@@ -22,7 +22,7 @@ const char* OTAPassword = "cf506a3aa";       // Password for Arduino to proceed 
 #define pixelPin 4                // Define pin that the data line for first NeoPixel
 #define pixelCount 3              // How many NeoPixels are you using?
 
-byte colourPos = 150;             // Default Colour (NB: 30 is Yellow, 150 is a nice Blue)
+byte colourPos = 30;             // Default Colour (NB: 30 is Yellow, 150 is a nice Blue)
 
 int timeZone = +12;               // Time zone offset (12 for New Zealand, need to do something about DST)
 const long interval = 60000;      // How often to check the time (60000 = every minute)
@@ -115,8 +115,8 @@ void loop() {
       const unsigned long seventyYears = 2208988800UL;
       unsigned long epoch = secsSince1900 - seventyYears;
       
-      int hours = ((epoch  % 86400L) / 3600);     // get the hour (86400 equals secs per day)
-      hours += timeZone;                          // Calculate the time zone offset
+      int hours = ((epoch % 86400L) / 3600);   // get the hour (86400 equals secs per day)
+      hours += timeZone;                       // Calculate the time zone offset
       if (hours < 0) { hours = 24 + hours; }
       if (hours > 23) { hours = hours - 23; }
       
@@ -127,7 +127,7 @@ void loop() {
         if (colourPos == 150) { rainbow(134); }
       }
       if (hours < 6 || hours >= 18) {
-        if (colourPos == 30) { rainbow(120); }
+        if (colourPos == 30) { rainbow(119); }
       }
     } 
   }
