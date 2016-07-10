@@ -4,12 +4,13 @@ Hacking an Ikea Spoka for my son, adding the functionality of a GloClock
 
 I bought an Ikea SPÖKA (http://www.ikea.com/us/en/catalog/products/30150984/) for my son to scare the monsters away. Orinially the Spoka could just glow blue/green , I wanted it to do more.
 
-HackaSpoka v1 (all about the hardware):
+HackaSpoka v1.5 (all about the hardware):
 
-Simply has the little guy glowing blue but will cycle through an RGB colour wheel when pressed. Can have its firmware upgraded OTA from the Arduino IDE.
+Simply has the little guy glowing blue from 1800 to 0600 and yellow during the day.  Will also cycle through an RGB colour wheel when pressed. Can have its firmware upgraded OTA from the Arduino IDE.
 
 ## Features
 
+* Glows blue during the night, yellow when it's time to get up
 * Replaced the three blue/green LEDs with three full RGB LEDs
 * Replaced the microprcessor with an ESP8266 (esp-12e package)
 * Added WIFI, everything has to have WIFI
