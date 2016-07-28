@@ -12,38 +12,42 @@
 #include <ArduinoOTA.h>        // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <WiFiManager.h>       // Also calls ESP8266WiFi.h, ESP8266WebServer.h, DNSServer.h and WiFiUdp.h
 
-#include <ESP8266mDNS.h>          // Also calls ESP8266WiFi.h and WiFiUdp.h
-#include <Adafruit_NeoPixel.h>    // Also calls Arduino.h
+#include <TimeLib.h>           // Library to hangle the clock
+#include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
+#include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "esp12e-spoka";        // Name of device as displayed in Arduino
+const char* OTAName = "esp12e-spoka-dev";    // Name of device as displayed in Arduino
 const char* OTAPassword = "cf506a3aa";       // Password for Arduino to proceed with upload
 
-#define buttonPin 13              // Define pin for mode switch (pulled up)
-#define pixelPin 4                // Define pin that the data line for first NeoPixel
-#define pixelCount 3              // How many NeoPixels are you using?
+#define buttonPin 13           // Define pin for mode switch (pulled up)
+#define pixelPin 4             // Define pin that the data line for first NeoPixel
+#define pixelCount 2           // How many NeoPixels are you using?
 
-byte colourPos = 30;             // Default Colour (NB: 30 is Yellow, 150 is a nice Blue)
+byte colourPos = 30;           // Default Colour (NB: 30 is Yellow, 150 is a nice Blue)
 
-int timeZone = +12;               // Time zone offset (12 for New Zealand, need to do something about DST)
-const long interval = 60000;      // How often to check the time (60000 = every minute)
+// NTP Servers:
+static const char ntpServerName[] = "time.nist.gov";  // NTP server to use
+const int timeZone = 12;       // New Zealand Time
 
-int buttonState;                  // the current reading from the input pin
-int lastButtonState = LOW;        // the previous reading from the input pin
-long lastDebounceTime = 0;        // the last time the output pin was toggled
-long debounceDelay = 50;          // the debounce time; increase if the output flickers
-unsigned long previousMillis = 0; // will store last time time was checked
+int buttonState;               // the current reading from the input pin
+int lastButtonState = LOW;     // the previous reading from the input pin
+long lastDebounceTime = 0;     // the last time the output pin was toggled
+long debounceDelay = 50;       // the debounce time; increase if the output flickers
+time_t prevDisplay = 0;        // when the digital clock was displayed
+unsigned int localPort = 8888;  // local port to listen for UDP packets
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(pixelCount, pixelPin, NEO_GRB + NEO_KHZ800);
 
-IPAddress timeServerIP;
-const char* ntpServerName = "time.nist.gov";
-const int NTP_PACKET_SIZE = 48; // NTP time stamp is in the first 48 bytes of the message
-byte packetBuffer[ NTP_PACKET_SIZE]; //buffer to hold incoming and outgoing packets
-WiFiUDP udp; // A UDP instance to let us send and receive packets over UDP
+WiFiUDP Udp;
+time_t getNtpTime();
+void digitalClockDisplay();
+void printDigits(int digits);
+void sendNTPpacket(IPAddress &address);
 
 void setup() {
-  Serial.begin(115200);
-  Serial.println("Booting");
+  Serial.begin(9200);
+  delay(250);
+  
   WiFiManager wifiManager;
   wifiManager.autoConnect();
 
@@ -68,8 +72,6 @@ void setup() {
   });
   ArduinoOTA.begin();
 
-  udp.begin(2390);
-
   pinMode(buttonPin, INPUT_PULLUP);
   pixels.begin(); // This initializes the NeoPixel library.
 
@@ -77,6 +79,13 @@ void setup() {
     pixels.setPixelColor(i, Wheel(colourPos & 255));
   }
   pixels.show();
+
+  Udp.begin(localPort);
+  Serial.print("Local port: ");
+  Serial.println(Udp.localPort());
+  Serial.println("waiting for sync");
+  setSyncProvider(getNtpTime);
+  setSyncInterval(300);
 }
 
 void loop() {
@@ -96,40 +105,16 @@ void loop() {
   }
   lastButtonState = reading;
 
-  unsigned long currentMillis = millis();
-
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
-
-    WiFi.hostByName(ntpServerName, timeServerIP); 
-        
-    sendNTPpacket(timeServerIP); // send an NTP packet to a time server
-    delay(1000);
-    
-    int cb = udp.parsePacket();
-    if (cb) {
-      udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
-      unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
-      unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
-      unsigned long secsSince1900 = highWord << 16 | lowWord;
-      const unsigned long seventyYears = 2208988800UL;
-      unsigned long epoch = secsSince1900 - seventyYears;
-      
-      int hours = ((epoch % 86400L) / 3600);   // get the hour (86400 equals secs per day)
-      hours += timeZone;                       // Calculate the time zone offset
-      if (hours < 0) { hours = 24 + hours; }
-      if (hours > 23) { hours = hours - 23; }
-      
-      Serial.println(hours);
-      Serial.println(colourPos);
-      
-      if (hours >= 6 && hours < 18) {
-        if (colourPos == 150) { rainbow(134); }
+  if (timeStatus() != timeNotSet) {
+    if (minute() != prevDisplay) { // update the display only if time has changed
+      prevDisplay = minute();
+      digitalClockDisplay();
+      if (hour() >= 6 && hour() <= 18) {
+        if (colourPos == 150) rainbow(134);
+      } else {
+        if (colourPos == 30) rainbow(119);
       }
-      if (hours < 6 || hours >= 18) {
-        if (colourPos == 30) { rainbow(119); }
-      }
-    } 
+    }
   }
 }
 
@@ -147,8 +132,10 @@ void rainbow(uint8_t colourMove) {
   }
 }
 
+
 // Input a value 0 to 255 to get a color value.
 // The colours are a transition r - g - b - back to r.
+
 int32_t Wheel(byte WheelPos) {
   WheelPos = 255 - WheelPos;
   if(WheelPos < 85) {
@@ -162,9 +149,60 @@ int32_t Wheel(byte WheelPos) {
   return pixels.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
 
-unsigned long sendNTPpacket(IPAddress& address)
+void digitalClockDisplay()
 {
-  Serial.println("sending NTP packet...");
+  // digital clock display of the time
+  Serial.print(hour());
+  if (minute() < 10) Serial.print('0');
+  Serial.print(minute());
+  Serial.print(" - ");
+  if (hour() >= 6 && hour() <= 19) {
+    Serial.print("Yellow");
+  } else {
+    Serial.print("Blue");
+  }
+  Serial.println();
+}
+
+/*-------- NTP code ----------*/
+
+const int NTP_PACKET_SIZE = 48; // NTP time is in the first 48 bytes of message
+byte packetBuffer[NTP_PACKET_SIZE]; //buffer to hold incoming & outgoing packets
+
+time_t getNtpTime()
+{
+  IPAddress ntpServerIP; // NTP server's ip address
+
+  while (Udp.parsePacket() > 0) ; // discard any previously received packets
+  Serial.println("Transmit NTP Request");
+  // get a random server from the pool
+  WiFi.hostByName(ntpServerName, ntpServerIP);
+  Serial.print(ntpServerName);
+  Serial.print(": ");
+  Serial.println(ntpServerIP);
+  sendNTPpacket(ntpServerIP);
+  uint32_t beginWait = millis();
+  while (millis() - beginWait < 1500) {
+    int size = Udp.parsePacket();
+    if (size >= NTP_PACKET_SIZE) {
+      Serial.println("Receive NTP Response");
+      Udp.read(packetBuffer, NTP_PACKET_SIZE);  // read packet into the buffer
+      unsigned long secsSince1900;
+      // convert four bytes starting at location 40 to a long integer
+      secsSince1900 =  (unsigned long)packetBuffer[40] << 24;
+      secsSince1900 |= (unsigned long)packetBuffer[41] << 16;
+      secsSince1900 |= (unsigned long)packetBuffer[42] << 8;
+      secsSince1900 |= (unsigned long)packetBuffer[43];
+      return secsSince1900 - 2208988800UL + timeZone * SECS_PER_HOUR;
+    }
+  }
+  Serial.println("No NTP Response :-(");
+  return 0; // return 0 if unable to get the time
+}
+
+// send an NTP request to the time server at the given address
+void sendNTPpacket(IPAddress &address)
+{
   // set all bytes in the buffer to 0
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
   // Initialize values needed to form NTP request
@@ -174,14 +212,13 @@ unsigned long sendNTPpacket(IPAddress& address)
   packetBuffer[2] = 6;     // Polling Interval
   packetBuffer[3] = 0xEC;  // Peer Clock Precision
   // 8 bytes of zero for Root Delay & Root Dispersion
-  packetBuffer[12]  = 49;
-  packetBuffer[13]  = 0x4E;
-  packetBuffer[14]  = 49;
-  packetBuffer[15]  = 52;
-
+  packetBuffer[12] = 49;
+  packetBuffer[13] = 0x4E;
+  packetBuffer[14] = 49;
+  packetBuffer[15] = 52;
   // all NTP fields have been given values, now
   // you can send a packet requesting a timestamp:
-  udp.beginPacket(address, 123); //NTP requests are to port 123
-  udp.write(packetBuffer, NTP_PACKET_SIZE);
-  udp.endPacket();
+  Udp.beginPacket(address, 123); //NTP requests are to port 123
+  Udp.write(packetBuffer, NTP_PACKET_SIZE);
+  Udp.endPacket();
 }
