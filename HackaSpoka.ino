@@ -16,7 +16,7 @@
 #include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "esp12e-spoka-dev";    // Name of device as displayed in Arduino
+const char* OTAName = "esp12e-Spoka-dev";    // Name of device as displayed in Arduino
 const char* OTAPassword = "cf506a3aa";       // Password for Arduino to proceed with upload
 
 #define buttonPin 13           // Define pin for mode switch (pulled up)
@@ -85,7 +85,7 @@ void setup() {
   Serial.println(Udp.localPort());
   Serial.println("waiting for sync");
   setSyncProvider(getNtpTime);
-  setSyncInterval(300);
+  setSyncInterval(10);
 }
 
 void loop() {
@@ -109,7 +109,7 @@ void loop() {
     if (minute() != prevDisplay) { // update the display only if time has changed
       prevDisplay = minute();
       digitalClockDisplay();
-      if (hour() >= 6 && hour() <= 18) {
+      if (hour() >= 6 && hour() <= 19) {
         if (colourPos == 150) rainbow(134);
       } else {
         if (colourPos == 30) rainbow(119);
@@ -131,7 +131,6 @@ void rainbow(uint8_t colourMove) {
     delay(15);
   }
 }
-
 
 // Input a value 0 to 255 to get a color value.
 // The colours are a transition r - g - b - back to r.
@@ -186,6 +185,7 @@ time_t getNtpTime()
     int size = Udp.parsePacket();
     if (size >= NTP_PACKET_SIZE) {
       Serial.println("Receive NTP Response");
+      setSyncInterval(600);
       Udp.read(packetBuffer, NTP_PACKET_SIZE);  // read packet into the buffer
       unsigned long secsSince1900;
       // convert four bytes starting at location 40 to a long integer
