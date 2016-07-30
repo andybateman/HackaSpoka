@@ -17,7 +17,7 @@
 #include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "Spoka";          // Name of device as displayed in Arduino
+const char* OTAName = "Spoka-Dev";      // Name of device as displayed in Arduino
 const char* OTAPassword = "cf506a3aa";  // Password for Arduino to proceed with upload
 
 #define buttonPin 13           // Define pin for mode switch (pulled up)
@@ -64,11 +64,11 @@ void handleRoot() {
     </style>\
   </head>\
   <body>\
-    <h2>Spoka thinks the time is:</h2>\
-    <h1>%04d<\h1>\
+    <h2>Spoka thinks the time is</h2>\
+    <h1>%02d:%02d<\h1>\
   </body>\
 </html>",
-    bgColour,fourDigitTime
+    bgColour,hour(),minute()
   );
   server.send ( 200, "text/html", temp );
 }
