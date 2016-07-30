@@ -16,17 +16,17 @@
 #include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "esp12e-Spoka-dev";    // Name of device as displayed in Arduino
+const char* OTAName = "Spoka";    // Name of device as displayed in Arduino
 const char* OTAPassword = "cf506a3aa";       // Password for Arduino to proceed with upload
 
 #define buttonPin 13           // Define pin for mode switch (pulled up)
 #define pixelPin 4             // Define pin that the data line for first NeoPixel
-#define pixelCount 2           // How many NeoPixels are you using?
+#define pixelCount 1           // How many NeoPixels are you using?
 
 byte colourPos = 30;           // Default Colour (NB: 30 is Yellow, 150 is a nice Blue)
 
 // NTP Servers:
-static const char ntpServerName[] = "time.nist.gov";  // NTP server to use
+static const char ntpServerName[] = "3.nz.pool.ntp.org";  // NTP server to use
 const int timeZone = 12;       // New Zealand Time
 
 int buttonState;               // the current reading from the input pin
@@ -45,7 +45,7 @@ void printDigits(int digits);
 void sendNTPpacket(IPAddress &address);
 
 void setup() {
-  Serial.begin(9200);
+  Serial.begin(9600);
   delay(250);
   
   WiFiManager wifiManager;
@@ -102,14 +102,14 @@ void loop() {
         rainbow(254);
       }
     }
-  }
+   }
   lastButtonState = reading;
 
   if (timeStatus() != timeNotSet) {
     if (minute() != prevDisplay) { // update the display only if time has changed
       prevDisplay = minute();
       digitalClockDisplay();
-      if (hour() >= 6 && hour() <= 19) {
+      if (hour() >= 6 && hour() < 18) {
         if (colourPos == 150) rainbow(134);
       } else {
         if (colourPos == 30) rainbow(119);
@@ -155,7 +155,7 @@ void digitalClockDisplay()
   if (minute() < 10) Serial.print('0');
   Serial.print(minute());
   Serial.print(" - ");
-  if (hour() >= 6 && hour() <= 19) {
+  if (hour() >= 6 && hour() < 18) {
     Serial.print("Yellow");
   } else {
     Serial.print("Blue");
