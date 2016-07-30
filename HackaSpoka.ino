@@ -13,10 +13,11 @@
 #include <WiFiManager.h>       // Also calls ESP8266WiFi.h, ESP8266WebServer.h, DNSServer.h and WiFiUdp.h
 
 #include <TimeLib.h>           // Library to hangle the clock
+#include <ESP8266WebServer.h>  // Library for the Web Server
 #include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "Spoka-Dev";      // Name of device as displayed in Arduino
+const char* OTAName = "Spoka";          // Name of device as displayed in Arduino
 const char* OTAPassword = "cf506a3aa";  // Password for Arduino to proceed with upload
 
 #define buttonPin 13           // Define pin for mode switch (pulled up)
@@ -44,9 +45,33 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(pixelCount, pixelPin, NEO_GRB + NEO
 
 WiFiUDP Udp;
 time_t getNtpTime();
-void digitalClockDisplay();
-void printDigits(int digits);
 void sendNTPpacket(IPAddress &address);
+
+ESP8266WebServer server(80);
+
+void handleRoot() {
+  char temp[400];
+  const char* bgColour = "FFF700";
+  if (colourPos == 150) bgColour = "0062FF";
+  snprintf ( temp, 400,
+
+"<html>\
+  <head>\
+    <meta http-equiv='refresh' content='60'/>\
+    <title>HackASpoka</title>\
+    <style>\
+      body { background-color: #%s; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; text-align: center }\
+    </style>\
+  </head>\
+  <body>\
+    <h2>Spoka thinks the time is:</h2>\
+    <h1>%04d<\h1>\
+  </body>\
+</html>",
+    bgColour,fourDigitTime
+  );
+  server.send ( 200, "text/html", temp );
+}
 
 void setup() {
   Serial.begin(9600);
@@ -76,6 +101,10 @@ void setup() {
   });
   ArduinoOTA.begin();
 
+  server.on("/", handleRoot);
+  server.begin();
+  Serial.println("HTTP server started");
+
   pinMode(buttonPin, INPUT_PULLUP);
   pixels.begin(); // This initializes the NeoPixel library.
 
@@ -85,7 +114,7 @@ void setup() {
   pixels.show();
 
   Udp.begin(localPort);
-  Serial.print("Local port: ");
+  Serial.print("NTP Local port: ");
   Serial.println(Udp.localPort());
   Serial.println("waiting for sync");
   setSyncProvider(getNtpTime);
@@ -94,6 +123,7 @@ void setup() {
 
 void loop() {
   ArduinoOTA.handle();
+  server.handleClient();
 
   int reading = digitalRead(buttonPin);
   if (reading != lastButtonState) {
