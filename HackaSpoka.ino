@@ -16,8 +16,8 @@
 #include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "Spoka";    // Name of device as displayed in Arduino
-const char* OTAPassword = "cf506a3aa";       // Password for Arduino to proceed with upload
+const char* OTAName = "Spoka-Dev";          // Name of device as displayed in Arduino
+const char* OTAPassword = "cf506a3aa";  // Password for Arduino to proceed with upload
 
 #define buttonPin 13           // Define pin for mode switch (pulled up)
 #define pixelPin 4             // Define pin that the data line for first NeoPixel
@@ -34,7 +34,7 @@ int lastButtonState = LOW;     // the previous reading from the input pin
 long lastDebounceTime = 0;     // the last time the output pin was toggled
 long debounceDelay = 50;       // the debounce time; increase if the output flickers
 time_t prevDisplay = 0;        // when the digital clock was displayed
-unsigned int localPort = 8888;  // local port to listen for UDP packets
+unsigned int localPort = 8888; // local port to listen for UDP packets
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(pixelCount, pixelPin, NEO_GRB + NEO_KHZ800);
 
@@ -108,12 +108,19 @@ void loop() {
   if (timeStatus() != timeNotSet) {
     if (minute() != prevDisplay) { // update the display only if time has changed
       prevDisplay = minute();
-      digitalClockDisplay();
+      
+      Serial.print(hour());
+      if (minute() < 10) Serial.print('0');
+      Serial.print(minute());
+      
       if (hour() >= 6 && hour() < 18) {
+        Serial.print(" - Yellow");
         if (colourPos == 150) rainbow(134);
       } else {
+        Serial.print(" - Blue");
         if (colourPos == 30) rainbow(119);
       }
+      Serial.println();
     }
   }
 }
@@ -146,21 +153,6 @@ int32_t Wheel(byte WheelPos) {
   }
   WheelPos -= 170;
   return pixels.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
-}
-
-void digitalClockDisplay()
-{
-  // digital clock display of the time
-  Serial.print(hour());
-  if (minute() < 10) Serial.print('0');
-  Serial.print(minute());
-  Serial.print(" - ");
-  if (hour() >= 6 && hour() < 18) {
-    Serial.print("Yellow");
-  } else {
-    Serial.print("Blue");
-  }
-  Serial.println();
 }
 
 /*-------- NTP code ----------*/
@@ -196,8 +188,8 @@ time_t getNtpTime()
       return secsSince1900 - 2208988800UL + timeZone * SECS_PER_HOUR;
     }
   }
-  Serial.println("No NTP Response :-(");
-  return 0; // return 0 if unable to get the time
+  Serial.println("NTP Server Not Responding");
+  return 0;
 }
 
 // send an NTP request to the time server at the given address
