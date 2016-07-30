@@ -16,12 +16,15 @@
 #include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "Spoka-Dev";          // Name of device as displayed in Arduino
+const char* OTAName = "Spoka-Dev";      // Name of device as displayed in Arduino
 const char* OTAPassword = "cf506a3aa";  // Password for Arduino to proceed with upload
 
 #define buttonPin 13           // Define pin for mode switch (pulled up)
 #define pixelPin 4             // Define pin that the data line for first NeoPixel
 #define pixelCount 1           // How many NeoPixels are you using?
+
+time_t dayStarts = 630;        // Time Spoka starts his day
+time_t nightStarts = 1845;     // Time Spoka goes to bed
 
 byte colourPos = 30;           // Default Colour (NB: 30 is Yellow, 150 is a nice Blue)
 
@@ -34,6 +37,7 @@ int lastButtonState = LOW;     // the previous reading from the input pin
 long lastDebounceTime = 0;     // the last time the output pin was toggled
 long debounceDelay = 50;       // the debounce time; increase if the output flickers
 time_t prevDisplay = 0;        // when the digital clock was displayed
+time_t fourDigitTime = 0;      // Four Digit 24 Hour Clock
 unsigned int localPort = 8888; // local port to listen for UDP packets
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(pixelCount, pixelPin, NEO_GRB + NEO_KHZ800);
@@ -106,14 +110,11 @@ void loop() {
   lastButtonState = reading;
 
   if (timeStatus() != timeNotSet) {
-    if (minute() != prevDisplay) { // update the display only if time has changed
-      prevDisplay = minute();
+    fourDigitTime = (hour()*100) + minute();
+    if (fourDigitTime != prevDisplay) { // update the display only if time has changed
+      Serial.print(prevDisplay = fourDigitTime);
       
-      Serial.print(hour());
-      if (minute() < 10) Serial.print('0');
-      Serial.print(minute());
-      
-      if (hour() >= 6 && hour() < 18) {
+      if (fourDigitTime >= dayStarts && fourDigitTime < nightStarts) {
         Serial.print(" - Yellow");
         if (colourPos == 150) rainbow(134);
       } else {
@@ -177,7 +178,7 @@ time_t getNtpTime()
     int size = Udp.parsePacket();
     if (size >= NTP_PACKET_SIZE) {
       Serial.println("Receive NTP Response");
-      setSyncInterval(600);
+      setSyncInterval(1200);
       Udp.read(packetBuffer, NTP_PACKET_SIZE);  // read packet into the buffer
       unsigned long secsSince1900;
       // convert four bytes starting at location 40 to a long integer
