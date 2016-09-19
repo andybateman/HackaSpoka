@@ -17,14 +17,14 @@
 #include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "Spoka-Dev";      // Name of device as displayed in Arduino
+const char* OTAName = "Spoka";      // Name of device as displayed in Arduino
 const char* OTAPassword = "cf506a3aa";  // Password for Arduino to proceed with upload
 
 #define buttonPin 13           // Define pin for mode switch (pulled up)
 #define pixelPin 4             // Define pin that the data line for first NeoPixel
 #define pixelCount 1           // How many NeoPixels are you using?
 
-time_t dayStarts = 630;        // Time Spoka starts his day
+time_t dayStarts = 601;        // Time Spoka starts his day
 time_t nightStarts = 1845;     // Time Spoka goes to bed
 
 byte colourPos = 30;           // Default Colour (NB: 30 is Yellow, 150 is a nice Blue)
@@ -33,6 +33,7 @@ byte colourPos = 30;           // Default Colour (NB: 30 is Yellow, 150 is a nic
 static const char ntpServerName[] = "3.nz.pool.ntp.org";  // NTP server to use
 const int timeZone = 12;       // New Zealand Time
 
+const char* lightOnOff = "true";
 int buttonState;               // the current reading from the input pin
 int lastButtonState = LOW;     // the previous reading from the input pin
 long lastDebounceTime = 0;     // the last time the output pin was toggled
@@ -73,6 +74,53 @@ void handleRoot() {
   server.send ( 200, "text/html", temp );
 }
 
+void handleOn() {
+
+  char temp[400];
+  pixels.setBrightness(255);
+  for(uint16_t i=0; i<pixels.numPixels(); i++) {
+    pixels.setPixelColor(i, Wheel(colourPos & 255));
+  }
+  pixels.show();
+  lightOnOff = "true";
+  
+  snprintf ( temp, 400,
+
+"<html>\
+  <body>\
+    <h1>Light On<\h1>\
+  </body>\
+</html>"
+  );
+  server.send ( 200, "text/html", temp );
+}
+
+void handleOff() {
+
+  char temp[400];
+  pixels.setBrightness(0);
+  pixels.show();
+  lightOnOff = "false";
+  
+  snprintf ( temp, 400,
+
+"<html>\
+  <body>\
+    <h1>Light Off<\h1>\
+  </body>\
+</html>"
+  );
+  server.send ( 200, "text/html", temp );
+}
+
+void handleStatus() {
+
+  char temp[400];
+  
+  snprintf ( temp, 400, lightOnOff );
+  server.send ( 200, "text/html", temp );
+}
+
 void setup() {
   Serial.begin(9600);
   delay(250);
@@ -102,6 +150,9 @@ void setup() {
   ArduinoOTA.begin();
 
   server.on("/", handleRoot);
+  server.on("/on", handleOn);
+  server.on("/off", handleOff);
+  server.on("/status", handleStatus);
   server.begin();
   Serial.println("HTTP server started");
 
