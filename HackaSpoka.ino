@@ -208,6 +208,10 @@ void loop() {
 }
 
 void rainbow(uint8_t colourMove) {
+  
+  pixels.setBrightness(255);
+  lightOnOff = "true";
+  
   for(uint16_t j=0; j<=colourMove; j++) {
 
     colourPos++;
