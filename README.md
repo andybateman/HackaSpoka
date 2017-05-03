@@ -4,7 +4,7 @@ Hacking an Ikea Spoka for my son, adding the functionality of a GloClock
 
 I bought an Ikea SPÖKA (http://www.ikea.com/us/en/catalog/products/30150984/) for my Son to scare the monsters away. Originally the Spoka could just glow blue/green , I wanted it to do more.
 
-![Image of a Spoka](https://i.ytimg.com/vi/NFXOOik6Z2I/maxresdefault.jpg)
+![Image of a Spoka](https://raw.githubusercontent.com/andybateman/HackaSpoka/f115561c91b7321a314a2652e75707e52f90825c/resources/spoka.jpg)
 
 HackaSpoka v1.6 (all about the hardware):
 
