@@ -17,14 +17,14 @@
 #include <ESP8266mDNS.h>       // Also calls ESP8266WiFi.h and WiFiUdp.h
 #include <Adafruit_NeoPixel.h> // Also calls Arduino.h
 
-const char* OTAName = "Spoka";      // Name of device as displayed in Arduino
-const char* OTAPassword = "cf506a3aa";  // Password for Arduino to proceed with upload
+const char* OTAName = "SpokaBoo";      // Name of device as displayed in Arduino
+const char* OTAPassword = "OTAP@ssw0rd";  // Password for Arduino to proceed with upload
 
-#define buttonPin 13           // Define pin for mode switch (pulled up)
-#define pixelPin 4             // Define pin that the data line for first NeoPixel
+#define buttonPin D1           // Define pin for mode switch (pulled up)
+#define pixelPin D2             // Define pin that the data line for first NeoPixel
 #define pixelCount 1           // How many NeoPixels are you using?
 
-time_t dayStarts = 601;        // Time Spoka starts his day
+time_t dayStarts = 630;        // Time Spoka starts his day
 time_t nightStarts = 1845;     // Time Spoka goes to bed
 
 byte colourPos = 30;           // Default Colour (NB: 30 is Yellow, 150 is a nice Blue)
